@@ -10,20 +10,20 @@ contract Chaos is VRFConsumerBaseV2 {
     // Required Chainlink parameters are set in the constructor. See Chainlink
     // VRF Configuration documentation for more information.
     VRFCoordinatorV2Interface COORDINATOR;
-    uint64 s_subscriptionId;
+    uint64 immutable s_subscriptionId;
     bytes32 s_keyHash;
 
     // The default is 3, but you can set this higher.
     uint16 requestConfirmations = 3;
     // How many words to request from the randomness function.
-    uint32 numWords = 6;
+    uint32 immutable numWords;
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
     // so 25,000 per word is a safe default for this example contract. Test and adjust
     // this limit based on the network that you select, the size of the request,
     // and the processing of the callback request in the fulfillRandomWords()
     // function.
-    uint32 callbackGasLimit = 25000 * numWords;
+    uint32 immutable callbackGasLimit;
 
     // The address that deploys the contract also performs administrative functions.
     address payable public owner;
@@ -32,11 +32,11 @@ contract Chaos is VRFConsumerBaseV2 {
     address public allowed;
 
     // Maps requestID to address.
-    mapping(uint256 => address) internal s_requests;
+    mapping(uint256 => address) public s_requests;
 
     // Records all the roll results for an address. The last roll also keeps track
     // of addresses that have a roll in progress.
-    mapping(address => uint256[numWords][]) private s_results;
+    mapping(address => uint256[][]) public s_results;
 
     // Mapping of addresses to their balances from fallback function
     mapping(address => uint) balance;
@@ -48,15 +48,19 @@ contract Chaos is VRFConsumerBaseV2 {
         bytes32 _gasLaneKeyHash,
         uint64 _subscriptionId,
         address _vrfCoordinator,
-        address _numWords
-    ) VRFConsumerBaseV2(vrfCoordinator) {
-        owner = msg.sender;
+        uint _numWords,
+        uint32 _callbackGasLimit,
+        uint _requestConfirmations
+    ) VRFConsumerBaseV2(_vrfCoordinator) {
+        owner = payable(msg.sender);
 
         COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
 
         s_subscriptionId = _subscriptionId;
         s_keyHash = _gasLaneKeyHash;
         numWords = _numWords;
+        callbackGasLimit = _callbackGasLimit;
+        requestConfirmations = _requestConfirmations;
     }
 
     // Only one address may perform rolls.
@@ -90,40 +94,37 @@ contract Chaos is VRFConsumerBaseV2 {
         );
 
         // Record the request id and link it to the user
-        s_shipwrights[requestId] = _shipwright;
+        s_requests[requestId] = _roller;
 
         // All 0s means roll in progress
-        uint256[numWords] rollInProgress;
+        uint256[] memory rollInProgress;
         for (uint i = 0; i < rollInProgress.length; i++) {
             rollInProgress[i] = 0;
         }
 
-        s_results[_shipwright].push(rollInProgress);
-        emit ShipBuild(requestId, _shipwright);
+        s_results[_roller].push(rollInProgress);
+        emit RollStarted(requestId, _roller);
     }
 
     // Checks if an address is ready to roll. An address will generally be considered
     // ready unless the last roll is all 0s which indicates a roll is in progress.
-    function readyToRoll(address _roller) view returns (bool) {
-        uint256[numWords] memory lastRoll = lastRoll(_roller);
+    function readyToRoll(address _roller) public view returns (bool) {
+        uint256[] memory recentRoll = lastRoll(_roller);
 
-        bool readyToRoll = true;
-        for (uint i = 0; i < lastRoll.length; i++) {
-            if (lastRoll[i] != 0) {
-                readyToRoll = false;
+        bool isReadyToRoll = true;
+        for (uint i = 0; i < recentRoll.length; i++) {
+            if (recentRoll[i] != 0) {
+                isReadyToRoll = false;
             }
         }
 
-        return readyToRoll;
+        return isReadyToRoll;
     }
 
     // Convenience function to return an address' last roll values.
-    function lastRoll(address _roller)
-        view
-        returns (uint256[numWords] storage)
-    {
-        uint256 lastIndex = s_results[_shipwright].length - 1;
-        return s_results[_shipwright][lastIndex];
+    function lastRoll(address _roller) public view returns (uint256[] memory) {
+        uint256 lastIndex = s_results[_roller].length - 1;
+        return s_results[_roller][lastIndex];
     }
 
     // Required callback for VRFConsumerBaseV2
@@ -132,18 +133,22 @@ contract Chaos is VRFConsumerBaseV2 {
         override
     {
         address roller = s_requests[requestId];
+        uint256 lastIndex = s_results[roller].length - 1;
+        uint256[] storage unfinishedRoll = s_results[roller][lastIndex];
 
-        uint256[numWords] storage lastRoll = lastRoll(roller);
-
-        for (uint256 i = 0; i < lastRoll.length; i++) {
-            lastRoll[i] = randomWords[i];
+        for (uint256 i = 0; i < randomWords.length; i++) {
+            unfinishedRoll.push(randomWords[i]);
         }
 
         // emitting event to signal that dice landed
-        emit ShipBuildDone(requestId, randomWords);
+        emit RollFinished(requestId, randomWords);
     }
 
     fallback() external payable {
+        balance[msg.sender] += msg.value;
+    }
+
+    receive() external payable {
         balance[msg.sender] += msg.value;
     }
 }
