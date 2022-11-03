@@ -48,9 +48,9 @@ contract Chaos is VRFConsumerBaseV2 {
         bytes32 _gasLaneKeyHash,
         uint64 _subscriptionId,
         address _vrfCoordinator,
-        uint _numWords,
+        uint32 _numWords,
         uint32 _callbackGasLimit,
-        uint _requestConfirmations
+        uint16 _requestConfirmations
     ) VRFConsumerBaseV2(_vrfCoordinator) {
         owner = payable(msg.sender);
 
