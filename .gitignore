@@ -9,3 +9,6 @@ out/
 
 # Dotenv file
 .env
+
+# Local repositories for dependencies
+.git
