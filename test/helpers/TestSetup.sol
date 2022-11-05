@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
+import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../../src/Chaos.sol";
 import "../mocks/MockLinkToken.sol";
@@ -25,6 +26,8 @@ abstract contract TestSetup is Test {
     address payable[] internal users;
     address internal owner;
     address internal alice;
+    address internal bob;
+    address internal carol;
 
     // Used to build test user wallet addresses
     bytes32 internal nextUser = keccak256(abi.encodePacked("user address"));
@@ -55,13 +58,22 @@ abstract contract TestSetup is Test {
         vrfCoordinator.addConsumer(subscriptionId, address(chaos));
 
         // Account setup
-        users = createUsers(2);
+        users = createUsers(4);
 
         owner = users[0];
         vm.label(owner, "Owner");
 
         alice = users[1];
         vm.label(alice, "Alice");
+
+        bob = users[2];
+        vm.label(bob, "Bob");
+
+        carol = users[3];
+        vm.label(carol, "Carol");
+
+        // Set Alice as the allowed caller
+        chaos.setAllowedCaller(address(alice));
     }
 
     function getNextUserAddress() external returns (address payable) {

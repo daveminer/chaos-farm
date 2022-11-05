@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "forge-std/console.sol";
 
 // VRF client intended to be used as a service by other contracts. This contract
 // implements the Subscription method of VRF v2; the Direct method is not supported.
@@ -16,7 +17,7 @@ contract Chaos is VRFConsumerBaseV2 {
     // The default is 3, but you can set this higher.
     uint16 requestConfirmations = 3;
     // How many words to request from the randomness function.
-    uint32 immutable numWords;
+    uint32 public immutable numWords;
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
     // so 25,000 per word is a safe default for this example contract. Test and adjust
@@ -29,7 +30,7 @@ contract Chaos is VRFConsumerBaseV2 {
     address payable public owner;
 
     // The only address that is allowed to perform rolls.
-    address public allowed;
+    address public allowedCaller;
 
     // Maps requestID to address.
     mapping(uint256 => address) public s_requests;
@@ -65,7 +66,7 @@ contract Chaos is VRFConsumerBaseV2 {
 
     // Only one address may perform rolls.
     modifier onlyAllowed() {
-        require(msg.sender == allowed);
+        require(msg.sender == allowedCaller);
         _;
     }
 
@@ -73,6 +74,11 @@ contract Chaos is VRFConsumerBaseV2 {
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
+    }
+
+    // Can only be called by a single address.
+    function setAllowedCaller(address _allowedCaller) public onlyOwner {
+        allowedCaller = _allowedCaller;
     }
 
     // Roll on behalf of another address.
@@ -97,7 +103,7 @@ contract Chaos is VRFConsumerBaseV2 {
         s_requests[requestId] = _roller;
 
         // All 0s means roll in progress
-        uint256[] memory rollInProgress;
+        uint[] memory rollInProgress = new uint[](numWords);
         for (uint i = 0; i < rollInProgress.length; i++) {
             rollInProgress[i] = 0;
         }
@@ -111,6 +117,11 @@ contract Chaos is VRFConsumerBaseV2 {
     function readyToRoll(address _roller) public view returns (bool) {
         uint256[] memory recentRoll = lastRoll(_roller);
 
+        // Guard for addresses that have never rolled before
+        if (recentRoll.length < numWords) {
+            return true;
+        }
+
         bool isReadyToRoll = true;
         for (uint i = 0; i < recentRoll.length; i++) {
             if (recentRoll[i] != 0) {
@@ -122,25 +133,36 @@ contract Chaos is VRFConsumerBaseV2 {
     }
 
     // Convenience function to return an address' last roll values.
+    // Output:
+    // [0,0,0,0,0,0] means roll in progress
+    // [x,x,x,x,x,x] means last roll complete (where x is uint256)
+    // []            means never rolled
     function lastRoll(address _roller) public view returns (uint256[] memory) {
+        uint rollCount = s_results[_roller].length;
+
+        if (rollCount < 1) {
+            uint[] memory noRolls = new uint[](0);
+            return noRolls;
+        }
+
         uint256 lastIndex = s_results[_roller].length - 1;
         return s_results[_roller][lastIndex];
     }
 
     // Required callback for VRFConsumerBaseV2
-    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords)
+    function fulfillRandomWords(uint requestId, uint[] memory randomWords)
         internal
         override
     {
         address roller = s_requests[requestId];
-        uint256 lastIndex = s_results[roller].length - 1;
-        uint256[] storage unfinishedRoll = s_results[roller][lastIndex];
+        uint lastIndex = s_results[roller].length - 1;
+        uint[] storage unfinishedRoll = s_results[roller][lastIndex];
 
         for (uint256 i = 0; i < randomWords.length; i++) {
-            unfinishedRoll.push(randomWords[i]);
+            unfinishedRoll[i] = randomWords[i];
         }
 
-        // emitting event to signal that dice landed
+        // Emitting event to signal that dice landed
         emit RollFinished(requestId, randomWords);
     }
 
