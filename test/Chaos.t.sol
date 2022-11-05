@@ -24,7 +24,7 @@ contract ChaosTest is TestSetup {
         requestIds[4] = rollForAddress(address(carol));
     }
 
-    function testLastRollInitial() public {
+    function testLastRollInitial() public view {
         uint[] memory roll = chaos.lastRoll(address(bob));
         assert(roll.length == 0);
     }
