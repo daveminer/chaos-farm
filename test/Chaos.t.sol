@@ -8,6 +8,10 @@ import "../src/Chaos.sol";
 contract ChaosTest is TestSetup {
     uint[] requestIds;
 
+    event AllowedAddressChanged(
+        address indexed oldAddress,
+        address indexed newAddress
+    );
     event RollStarted(uint256 indexed requestId, address indexed roller);
     event RollFinished(uint256 indexed requestId, uint256[] indexed result);
 
@@ -33,6 +37,11 @@ contract ChaosTest is TestSetup {
         // Access control
         vm.prank(address(bob));
         vm.expectRevert(bytes("Must be owner."));
+        chaos.setAllowedCaller(address(bob));
+
+        vm.prank(address(chaos.owner()));
+        vm.expectEmit(true, true, false, false);
+        emit AllowedAddressChanged(alice, bob);
         chaos.setAllowedCaller(address(bob));
     }
 

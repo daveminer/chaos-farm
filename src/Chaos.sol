@@ -41,6 +41,10 @@ contract Chaos is VRFConsumerBaseV2 {
     // Mapping of addresses to their balances from fallback function
     mapping(address => uint) balance;
 
+    event AllowedAddressChanged(
+        address indexed oldAddress,
+        address indexed newAddress
+    );
     event RollStarted(uint indexed requestId, address indexed roller);
     event RollFinished(uint indexed requestId, uint[] indexed result);
 
@@ -77,6 +81,7 @@ contract Chaos is VRFConsumerBaseV2 {
 
     // Can only be called by a single address.
     function setAllowedCaller(address _allowedCaller) public onlyOwner {
+        emit AllowedAddressChanged(allowedCaller, _allowedCaller);
         allowedCaller = _allowedCaller;
     }
 
