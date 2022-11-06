@@ -6,28 +6,27 @@ import "./helpers/TestSetup.sol";
 import "../src/Chaos.sol";
 
 contract ChaosTest is TestSetup {
+    uint[] requestIds;
+
     event RollStarted(uint256 indexed requestId, address indexed roller);
     event RollFinished(uint256 indexed requestId, uint256[] indexed result);
 
     function setUp() public override {
         super.setUp();
 
-        // Roll random numbers for users
-        uint[] memory requestIds = new uint[](5);
-
-        requestIds[0] = rollForAddress(address(bob));
+        requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[0], address(chaos));
-        requestIds[1] = rollForAddress(address(bob));
+        requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[1], address(chaos));
 
-        requestIds[2] = rollForAddress(address(carol));
+        requestIds.push(rollForAddress(address(carol)));
         vrfCoordinator.fulfillRandomWords(requestIds[2], address(chaos));
 
-        requestIds[3] = rollForAddress(address(bob));
+        requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[3], address(chaos));
 
         // Carol's last roll is in progress.
-        requestIds[4] = rollForAddress(address(carol));
+        requestIds.push(rollForAddress(address(carol)));
     }
 
     function testSetAllowedCaller() public {
@@ -37,7 +36,7 @@ contract ChaosTest is TestSetup {
         chaos.setAllowedCaller(address(bob));
     }
 
-    function testLastRoll() public {
+    function testLastRoll() public view {
         // Never rolled before
         uint[] memory aliceLastRoll = chaos.lastRoll(address(alice));
         assert(aliceLastRoll.length == 0);
@@ -51,7 +50,7 @@ contract ChaosTest is TestSetup {
         assert(carolLastRoll.length == chaos.numWords());
     }
 
-    function testReadyToRoll() public {
+    function testReadyToRoll() public view {
         // Never rolled before
         bool aliceReady = chaos.readyToRoll(address(alice));
         assert(aliceReady == true);
@@ -61,8 +60,6 @@ contract ChaosTest is TestSetup {
         assert(bobReady == true);
 
         // Last roll in progress
-        uint[] memory roll = chaos.lastRoll(address(carol));
-        console.log(roll.length);
         bool carolReady = chaos.readyToRoll(address(carol));
         assert(carolReady == false);
     }
@@ -84,6 +81,26 @@ contract ChaosTest is TestSetup {
         vm.expectRevert(bytes("Roll in progress."));
         uint carolRequestId = chaos.rollDice(address(carol));
     }
+
+    function testFulfillRandomWords() public {
+        vm.expectEmit(true, false, false, false);
+        emit RollFinished(5, new uint[](chaos.numWords()));
+
+        uint[] memory roll = chaos.lastRoll(address(carol));
+        for (uint i = 0; i < roll.length; i++) {
+            assert(roll[i] == 0);
+        }
+
+        // Carol's last roll is in progress
+        vrfCoordinator.fulfillRandomWords(requestIds[4], address(chaos));
+
+        uint[] memory finishedRoll = chaos.lastRoll(address(carol));
+        for (uint i = 0; i < finishedRoll.length; i++) {
+            assert(finishedRoll[i] != 0);
+        }
+    }
+
+    //function testIntegration() public {}
 
     function rollForAddress(address _roller) private returns (uint requestId) {
         vm.prank(chaos.allowedCaller());
