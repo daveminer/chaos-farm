@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "forge-std/console.sol";
 
 // VRF client intended to be used as a service by other contracts. This contract
 // implements the Subscription method of VRF v2; the Direct method is not supported.
@@ -33,17 +32,17 @@ contract Chaos is VRFConsumerBaseV2 {
     address public allowedCaller;
 
     // Maps requestID to address.
-    mapping(uint256 => address) public s_requests;
+    mapping(uint => address) public s_requests;
 
     // Records all the roll results for an address. The last roll also keeps track
     // of addresses that have a roll in progress.
-    mapping(address => uint256[][]) public s_results;
+    mapping(address => uint[][]) public s_results;
 
     // Mapping of addresses to their balances from fallback function
     mapping(address => uint) balance;
 
-    event RollStarted(uint256 indexed requestId, address indexed roller);
-    event RollFinished(uint256 indexed requestId, uint256[] indexed result);
+    event RollStarted(uint indexed requestId, address indexed roller);
+    event RollFinished(uint indexed requestId, uint[] indexed result);
 
     constructor(
         bytes32 _gasLaneKeyHash,
@@ -116,7 +115,6 @@ contract Chaos is VRFConsumerBaseV2 {
     // ready unless the last roll is all 0s which indicates a roll is in progress.
     function readyToRoll(address _roller) public view returns (bool) {
         uint256[] memory recentRoll = lastRoll(_roller);
-        console.log(recentRoll.length, "RECENT");
 
         // Never rolled before.
         if (recentRoll.length < numWords) {
@@ -141,7 +139,6 @@ contract Chaos is VRFConsumerBaseV2 {
     // []            means never rolled
     function lastRoll(address _roller) public view returns (uint256[] memory) {
         uint rollCount = s_results[_roller].length;
-        console.log(rollCount, "ROLLCOUNT");
 
         if (rollCount < 1) {
             uint[] memory noRolls = new uint[](0);
@@ -149,9 +146,8 @@ contract Chaos is VRFConsumerBaseV2 {
         }
 
         uint256 lastIndex = s_results[_roller].length - 1;
-        uint[] memory lastRoll = s_results[_roller][lastIndex];
-        console.log(lastRoll[5], "LASTROLL");
-        return lastRoll;
+        uint[] memory lastRollForRoller = s_results[_roller][lastIndex];
+        return lastRollForRoller;
     }
 
     // Required callback for VRFConsumerBaseV2
