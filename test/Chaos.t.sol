@@ -176,7 +176,7 @@ contract ChaosTest is TestSetup {
 
         // Check state
         assert(requestIds.length == 8);
-        uint aliceRollTwoValueOne = chaos.s_results(address(alice), , 0);
+        uint aliceRollTwoValueOne = chaos.s_results(address(alice), 1, 0);
         assert(aliceRollTwoValueOne == 0);
 
         // Alice finishes again
