@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "forge-std/console.sol";
 
 // VRF client intended to be used as a service by other contracts. This contract
 // implements the Subscription method of VRF v2; the Direct method is not supported.
@@ -33,17 +32,17 @@ contract Chaos is VRFConsumerBaseV2 {
     address public allowedCaller;
 
     // Maps requestID to address.
-    mapping(uint256 => address) public s_requests;
+    mapping(uint => address) public s_requests;
 
     // Records all the roll results for an address. The last roll also keeps track
     // of addresses that have a roll in progress.
-    mapping(address => uint256[][]) public s_results;
+    mapping(address => uint[][]) public s_results;
 
     // Mapping of addresses to their balances from fallback function
     mapping(address => uint) balance;
 
-    event RollStarted(uint256 indexed requestId, address indexed roller);
-    event RollFinished(uint256 indexed requestId, uint256[] indexed result);
+    event RollStarted(uint indexed requestId, address indexed roller);
+    event RollFinished(uint indexed requestId, uint[] indexed result);
 
     constructor(
         bytes32 _gasLaneKeyHash,
@@ -66,13 +65,13 @@ contract Chaos is VRFConsumerBaseV2 {
 
     // Only one address may perform rolls.
     modifier onlyAllowed() {
-        require(msg.sender == allowedCaller);
+        require(msg.sender == allowedCaller, "Must be allowed caller.");
         _;
     }
 
     // Chainlink needs this for subscription authorization.
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Must be owner.");
         _;
     }
 
@@ -88,7 +87,7 @@ contract Chaos is VRFConsumerBaseV2 {
         returns (uint256 requestId)
     {
         // Rolling account must not have a pending roll.
-        require(readyToRoll(_roller));
+        require(readyToRoll(_roller), "Roll in progress.");
 
         // Request randomness and save the requestId
         requestId = COORDINATOR.requestRandomWords(
@@ -117,19 +116,20 @@ contract Chaos is VRFConsumerBaseV2 {
     function readyToRoll(address _roller) public view returns (bool) {
         uint256[] memory recentRoll = lastRoll(_roller);
 
-        // Guard for addresses that have never rolled before
+        // Never rolled before.
         if (recentRoll.length < numWords) {
             return true;
         }
 
-        bool isReadyToRoll = true;
+        // Array with non-zero integers is a finished roll.
         for (uint i = 0; i < recentRoll.length; i++) {
             if (recentRoll[i] != 0) {
-                isReadyToRoll = false;
+                return true;
             }
         }
 
-        return isReadyToRoll;
+        // Roll in progress.
+        return false;
     }
 
     // Convenience function to return an address' last roll values.
@@ -146,7 +146,8 @@ contract Chaos is VRFConsumerBaseV2 {
         }
 
         uint256 lastIndex = s_results[_roller].length - 1;
-        return s_results[_roller][lastIndex];
+        uint[] memory lastRollForRoller = s_results[_roller][lastIndex];
+        return lastRollForRoller;
     }
 
     // Required callback for VRFConsumerBaseV2
