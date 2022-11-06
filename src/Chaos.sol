@@ -88,7 +88,7 @@ contract Chaos is VRFConsumerBaseV2 {
         returns (uint256 requestId)
     {
         // Rolling account must not have a pending roll.
-        require(readyToRoll(_roller));
+        require(readyToRoll(_roller), "Roll in progress.");
 
         // Request randomness and save the requestId
         requestId = COORDINATOR.requestRandomWords(
@@ -116,20 +116,22 @@ contract Chaos is VRFConsumerBaseV2 {
     // ready unless the last roll is all 0s which indicates a roll is in progress.
     function readyToRoll(address _roller) public view returns (bool) {
         uint256[] memory recentRoll = lastRoll(_roller);
+        console.log(recentRoll.length, "RECENT");
 
-        // Guard for addresses that have never rolled before
+        // Never rolled before.
         if (recentRoll.length < numWords) {
             return true;
         }
 
-        bool isReadyToRoll = true;
+        // Array with non-zero integers is a finished roll.
         for (uint i = 0; i < recentRoll.length; i++) {
             if (recentRoll[i] != 0) {
-                isReadyToRoll = false;
+                return true;
             }
         }
 
-        return isReadyToRoll;
+        // Roll in progress.
+        return false;
     }
 
     // Convenience function to return an address' last roll values.
@@ -139,6 +141,7 @@ contract Chaos is VRFConsumerBaseV2 {
     // []            means never rolled
     function lastRoll(address _roller) public view returns (uint256[] memory) {
         uint rollCount = s_results[_roller].length;
+        console.log(rollCount, "ROLLCOUNT");
 
         if (rollCount < 1) {
             uint[] memory noRolls = new uint[](0);
@@ -146,7 +149,9 @@ contract Chaos is VRFConsumerBaseV2 {
         }
 
         uint256 lastIndex = s_results[_roller].length - 1;
-        return s_results[_roller][lastIndex];
+        uint[] memory lastRoll = s_results[_roller][lastIndex];
+        console.log(lastRoll[5], "LASTROLL");
+        return lastRoll;
     }
 
     // Required callback for VRFConsumerBaseV2
