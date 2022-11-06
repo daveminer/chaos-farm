@@ -30,6 +30,13 @@ contract ChaosTest is TestSetup {
         requestIds[4] = rollForAddress(address(carol));
     }
 
+    function testSetAllowedCaller() public {
+        // Access control
+        vm.prank(address(bob));
+        vm.expectRevert(bytes("Must be owner."));
+        chaos.setAllowedCaller(address(bob));
+    }
+
     function testLastRoll() public {
         // Never rolled before
         uint[] memory aliceLastRoll = chaos.lastRoll(address(alice));
@@ -42,32 +49,6 @@ contract ChaosTest is TestSetup {
         // Last roll in progress
         uint[] memory carolLastRoll = chaos.lastRoll(address(carol));
         assert(carolLastRoll.length == chaos.numWords());
-
-        // Address has never rolled before, last roll is an empty array.
-        // uint[] memory roll = chaos.lastRoll(address(alice));
-        // assert(roll.length == 0);
-
-        //vm.expectEmit(true, true, false, false);
-        //emit RollStarted(1, address(bob));
-
-        // uint rollInProgress = rollForAddress(address(bob));
-
-        // // Roll is in progress; array is populated with 0s
-        // roll = chaos.lastRoll(address(bob));
-        // for (uint i = 0; i < roll.length; i++) {
-        //     assert(roll[i] == 0);
-        // }
-
-        // vm.expectEmit(true, false, false, false);
-        // emit RollFinished(1, new uint[](chaos.numWords()));
-
-        // vrfCoordinator.fulfillRandomWords(rollInProgress, address(chaos));
-
-        // // Roll complete. Random values are present in the array
-        // uint[] memory finishedRoll = chaos.lastRoll(address(bob));
-        // for (uint i = 0; i < finishedRoll.length; i++) {
-        //     assert(finishedRoll[i] != 0);
-        // }
     }
 
     function testReadyToRoll() public {
@@ -84,30 +65,14 @@ contract ChaosTest is TestSetup {
         console.log(roll.length);
         bool carolReady = chaos.readyToRoll(address(carol));
         assert(carolReady == false);
-
-        // uint[] memory firstRoll = chaos.lastRoll(address(bob));
-        // for (uint i = 0; i < firstRoll.length; i++) {
-        //     console.log(firstRoll[i], "F");
-        // }
-
-        // uint rollInProgress = rollForAddress(address(bob));
-
-        // uint[] memory lastRoll = chaos.lastRoll(address(bob));
-        // for (uint i = 0; i < lastRoll.length; i++) {
-        //     console.log(lastRoll[i], "N");
-        // }
-
-        // bobReady = chaos.readyToRoll(address(bob));
-        // console.log(bobReady, "BOBRDY");
-        // //assert(bobReady == false);
-
-        // vrfCoordinator.fulfillRandomWords(rollInProgress, address(chaos));
-
-        // bobReady = chaos.readyToRoll(address(bob));
-        // //assert(bobReady == true);
     }
 
     function testRollDice() public {
+        // Only allowed address can call
+        vm.prank(address(bob));
+        vm.expectRevert(bytes("Must be allowed caller."));
+        uint failedRequestId = chaos.rollDice(address(alice));
+
         // Never rolled before
         uint _aliceRequestId = rollForAddress(address(alice));
 

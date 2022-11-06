@@ -66,13 +66,13 @@ contract Chaos is VRFConsumerBaseV2 {
 
     // Only one address may perform rolls.
     modifier onlyAllowed() {
-        require(msg.sender == allowedCaller);
+        require(msg.sender == allowedCaller, "Must be allowed caller.");
         _;
     }
 
     // Chainlink needs this for subscription authorization.
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Must be owner.");
         _;
     }
 
