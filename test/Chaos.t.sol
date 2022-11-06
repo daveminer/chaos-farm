@@ -71,9 +71,13 @@ contract ChaosTest is TestSetup {
         uint failedRequestId = chaos.rollDice(address(alice));
 
         // Never rolled before
+        vm.expectEmit(true, false, false, false);
+        emit RollStarted(6, address(0));
         uint _aliceRequestId = rollForAddress(address(alice));
 
         // Last roll is complete
+        vm.expectEmit(true, false, false, false);
+        emit RollStarted(7, address(0));
         uint _bobRequestId = rollForAddress(address(bob));
 
         // Last roll in progress
