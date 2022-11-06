@@ -58,18 +58,15 @@ abstract contract TestSetup is Test {
         vrfCoordinator.addConsumer(subscriptionId, address(chaos));
 
         // Account setup
-        users = createUsers(4);
+        users = createUsers(3);
 
-        owner = users[0];
-        vm.label(owner, "Owner");
-
-        alice = users[1];
+        alice = users[0];
         vm.label(alice, "Alice");
 
-        bob = users[2];
+        bob = users[1];
         vm.label(bob, "Bob");
 
-        carol = users[3];
+        carol = users[2];
         vm.label(carol, "Carol");
 
         // Set Alice as the allowed caller
