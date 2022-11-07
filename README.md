@@ -17,9 +17,15 @@ Start an Anvil instance in a terminal:
 anvil
 ```
 
-Choose one of the private keys in the Anvil instance and set it as an environment variable in a new terminal along with the other environment variables below:
+Choose one of the private keys in the Anvil instance and set it as an environment variable in a new terminal:
+
 ```
 ANVIL_PKEY=<<any-private-key-from-anvil>>
+```
+
+...along with the other environment variables below:
+
+```
 # .1 LINK
 BASE_FEE=10000000000000000
 # Max Gas per VRF service call
