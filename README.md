@@ -6,7 +6,7 @@ Chaos farm is designed to be used as a service by other contracts. This service 
 
 ## How to Use
 
-Chaos Farm may be deployed to local EVM development blockchains like [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), [Hardhat Network](https://hardhat.org/hardhat-network/docs/overview) or [Ganache](https://trufflesuite.com/ganache/) or [networks that are compatible with Chainlink VRF](https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/).
+Chaos Farm may be deployed to local EVM development blockchains like [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), [Hardhat Network](https://hardhat.org/hardhat-network/docs/overview) or [Ganache](https://trufflesuite.com/ganache/) or testnet/mainnet on [networks that are compatible with Chainlink VRF](https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/).
 
 
 ### Local Development with [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil) and [Cast](https://book.getfoundry.sh/cast/)
