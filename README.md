@@ -38,10 +38,22 @@ forge create --rpc-url http://127.0.0.1:8545 --constructor-args $BASE_FEE $GAS_P
 ```
 
 Find the `Deployed to:` address from the contract deployment and set it as another environment variable:
+
 ```
 VRF_CONTRACT=<address-from-mock-vrf-depoloy>
 ```
 
+The contract can be verified as working by making a call to a contract function with `cast`:
+
+```
+cast call $VRF_CONTRACT "lastRoll(address)(uint[])" "0x598aD9cA8F77815C1A1b0eABEBeB26859d1828A3" --rpc-url http://127.0.0.1:8545
+```
+
+Deploy the Chaos Farm contract and point to the deployed VRF contract:
+
+```
+forge create --rpc-url http://127.0.0.1:8545 --constructor-args 0x8af398995b04c28e9951adb9721ef74c74f93e6a478f39e7e0777be13527e7ef 1 $VRF_CONTRACT 6 1000000000 3 --private-key $ANVIL_PKEY src/Chaos.sol:Chaos
+```
 
 ###
 
