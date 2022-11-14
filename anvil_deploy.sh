@@ -1,19 +1,19 @@
 #!/bin/bash
 
+# Anvil node
+RPC_URL=http://127.0.0.1:8545
+# Max Gas per VRF service call
+GAS_PRICE_LINK=10000000000
+GAS_LIMIT=1000000
+# Fee for a VRF service request: .1 LINK
+BASE_FEE=100000000000000
+# Arbitrary amount of LINK to fund the subscription with for VRF requests.
+LINK_FUND_AMT=1000000000000000000
 # First default address and private key from Anvil
 OWNER_ADDRESS=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 OWNER_SECRET=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-# Match the prefix of the forge deployment output that contains
-# the contract address.
-#FORGE_DEPLOY_ADDRESS_KEY='Deployed to: '
-# Fee for a VRF service request: .1 LINK
-BASE_FEE=100000000000000
-# Max Gas per VRF service call
-GAS_PRICE_LINK=10000000000
-
-RPC_URL=http://127.0.0.1:8545
-
+# Helper function extracts the contract address from forge deployment terminal output
 contract_address() {
   for line in "$@";
   do
@@ -25,13 +25,7 @@ contract_address() {
   done
 }
 
-# Set the owner account variables
-#read -p "Enter the owner address you wish to use : " OWNER_ADDRESS
-#read -p "Enter the private key for the previous address:" OWNER_SECRET
-
-#IFS=$'\n'
-
-# Deploy the VRF contract and save the output for the contract address
+# Deploy the VRF contract
 readarray -t vrf_deploy < <(
   forge create \
   --rpc-url $RPC_URL \
@@ -39,20 +33,15 @@ readarray -t vrf_deploy < <(
   --private-key $OWNER_SECRET \
   test/mocks/MockVRFCoordinatorV2.sol:VRFCoordinatorV2Mock
 )
-
-# for deploy_line in ${vrf_deploy[@]}
-# do
-#   if grep -q $FORGE_DEPLOY_ADDRESS_KEY <<< $deploy_line; then
-#     # Remove the prefix from the deployed contract address
-#     VRF_CONTRACT=${deploy_line#"$FORGE_DEPLOY_ADDRESS_KEY"}
-#   fi
-# done
 VRF_CONTRACT=$(contract_address "${vrf_deploy[@]}")
 
-cast send $VRF_CONTRACT "createSubscription()(uint64)" --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
+# Create a subscription on the deployed VRF contract
+cast send $VRF_CONTRACT "createSubscription()(uint64)" --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
-cast send $VRF_CONTRACT "fundSubscription(uint64, uint96)" 1 1000000000000000000 --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
+# Fund the subsciption with test LINK
+cast send $VRF_CONTRACT "fundSubscription(uint64, uint96)" 1 $LINK_FUND_AMT --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
+# Deploy Chaos Farm
 readarray -t chaos_deploy < <(
   forge create \
   --rpc-url $RPC_URL \
@@ -65,47 +54,22 @@ readarray -t chaos_deploy < <(
   --private-key $OWNER_SECRET \
   src/Chaos.sol:Chaos
 )
-
-echo "CHAOS DEPLOY"
-echo ${chaos_deploy[3]}
-
 CHAOS_CONTRACT=$(contract_address "${chaos_deploy[@]}")
-# for deploy_line in ${chaos_deploy[@]}
-# do
-#   if grep -q $FORGE_DEPLOY_ADDRESS_KEY <<< $deploy_line; then
-#     # Remove the prefix from the deployed contract address
-#     CHAOS_CONTRACT=${deploy_line#"$FORGE_DEPLOY_ADDRESS_KEY"}
-#   fi
-# done
-echo "CHAOSSSSS"
-echo $CHAOS_CONTRACT
 
-cast send $VRF_CONTRACT "addConsumer(uint64, address)" 1 $CHAOS_CONTRACT --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
+# Add the Chaos Farm contract as a consumer address to the VRF contract
+cast send $VRF_CONTRACT "addConsumer(uint64, address)" 1 $CHAOS_CONTRACT --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
-cast send $CHAOS_CONTRACT "setAllowedCaller(address)" $OWNER_ADDRESS --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
+# Set the Owner address as the Allowed Caller for the Chaos Farm contract
+cast send $CHAOS_CONTRACT "setAllowedCaller(address)" $OWNER_ADDRESS --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
-cast send $CHAOS_CONTRACT "rollDice(address)" $OWNER_ADDRESS --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
+# Owner initiates a VRF request via Chaos Farm API
+cast send $CHAOS_CONTRACT "rollDice(address)" $OWNER_ADDRESS --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
-# readarray -t roll_result < <(
-#   cast send $CHAOS_CONTRACT "rollDice(address)" $OWNER_ADDRESS --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
-# )
-
-# for deploy_line in ${readarray[@]}
-# do
-#   echo $deploy_line
-#   if grep -q $FORGE_DEPLOY_ADDRESS_KEY <<< $deploy_line; then
-#     # Remove the prefix from the deployed contract address
-#     CHAOS_CONTRACT=${ploy_line#"$FORGE_DEPLOY_ADDRESS_KEY"}
-#   fi
-# done
-
+# Output the last roll to verify it's a roll in progress, i.e. [0,0,0,0,0,0]
 cast call $CHAOS_CONTRACT "lastRoll(address)(uint[])" $OWNER_ADDRESS --rpc-url $RPC_URL
 
-#cast send $VRF_CONTRACT --from $OWNER_ADDRESS --value 1ether --rpc-url $RPC_URL
-#cast send $VRF_CONTRACT "" --from $OWNER_ADDRESS --value 1ether --rpc-url $RPC_URL
+# Simulate the callback returning the random numbers; pass in fixed values
+cast send $VRF_CONTRACT "fulfillRandomWordsWithOverride(uint256, address, uint256[])" 1 $CHAOS_CONTRACT [1,2,3,4,5,6] --from $OWNER_ADDRESS --gas-limit $GAS_LIMIT --rpc-url $RPC_URL
 
-
-#cast call $VRF_CONTRACT "fulfillRandomWords(uint256)(address)" 1 $OWNER_ADDRESS --rpc-url $RPC_URL
-cast send $VRF_CONTRACT "fulfillRandomWordsWithOverride(uint256, address, uint256[])" 1 $CHAOS_CONTRACT [1,2,3,4,5,6] --from $OWNER_ADDRESS --gas-limit 1000000 --rpc-url $RPC_URL
-
+# Output the last roll again to show it's complete and contains the fixed values from the previous step.
 cast call $CHAOS_CONTRACT "lastRoll(address)(uint[])" $OWNER_ADDRESS --rpc-url $RPC_URL
