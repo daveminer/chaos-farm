@@ -6,7 +6,7 @@ This service is intended to preserve the integrity of the recorded VRF results s
 
 ## How to Use
 
-Chaos Farm may be deployed to local EVM development blockchains like [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), [Hardhat Network](https://hardhat.org/hardhat-network/docs/overview) or [Ganache](https://trufflesuite.com/ganache/) or testnet/mainnet on [networks that are compatible with Chainlink VRF](https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/).
+Chaos Farm may be deployed to local EVM development blockchains like [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), [Hardhat Network](https://hardhat.org/hardhat-network/docs/overview) or [Ganache](https://trufflesuite.com/ganache/) and testnet/mainnet on networks that are [compatible](https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/) with Chainlink VRF.
 
 ### Local Demo
 
