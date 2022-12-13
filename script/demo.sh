@@ -13,9 +13,6 @@ LT_BLUE='\033[1;34m'
 LT_GREEN='\033[1;32m'
 NC='\033[0m'
 
-# Success value for transaction output
-TX_SUCCESS='0x1'
-
 # Anvil node
 RPC_URL='http://127.0.0.1:8545'
 
@@ -43,6 +40,10 @@ LINK_FUND_AMT=1000000000000000000
 OWNER_ADDRESS='0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
 OWNER_SECRET='0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 
+# The local path to the contract
+VRF_CONTRACT_PATH='test/mocks/MockVRFCoordinatorV2.sol:VRFCoordinatorV2Mock'
+CHAOS_FARM_CONTRACT_PATH='src/Chaos.sol:Chaos'
+
 # Default flags for sending transactions via Cast
 TX_FLAGS="--from ${OWNER_ADDRESS} --gas-limit ${GAS_LIMIT} --rpc-url ${RPC_URL} --json"
 
@@ -57,7 +58,8 @@ if [ $(dpkg-query -W -f='${Status}' jq 2>/dev/null | grep -c "ok installed") -eq
 fi
 
 echo "Deploying the VRF contract..."
-VRF_CONTRACT=$(deploy_contract $RPC_URL $BASE_FEE $GAS_PRICE_LINK $OWNER_SECRET)
+VRF_CONTRACT_ARGS="${BASE_FEE} ${GAS_PRICE_LINK}"
+VRF_CONTRACT=$(deploy_contract $RPC_URL "$VRF_CONTRACT_ARGS" $OWNER_SECRET $VRF_CONTRACT_PATH)
 echo "VRF contract deployed to: ${VRF_CONTRACT}"
 
 # Create a subscription on the deployed VRF contract
@@ -75,19 +77,9 @@ send_tx $VRF_CONTRACT "fundSubscription(uint64, uint96)" $SUBSCRIPTION_ID $LINK_
 
 # Deploy Chaos Farm
 echo "Deploying Chaos Farm..."
-readarray -t chaos_deploy < <(
-  forge create \
-  --rpc-url $RPC_URL \
-  --constructor-args ${GAS_LANE_KEY_HASH} \
-  $SUBSCRIPTION_ID \
-  $VRF_CONTRACT \
-  $VRF_WORD_COUNT \
-  $CALLBACK_GAS_LIMIT \
-  $DEPLOYMENT_CONFIRMATIONS \
-  --private-key $OWNER_SECRET \
-  src/Chaos.sol:Chaos
-)
-CHAOS_CONTRACT=$(contract_address "${chaos_deploy[@]}")
+CHAOS_CONTRACT_ARGS="${GAS_LANE_KEY_HASH} ${SUBSCRIPTION_ID} ${VRF_CONTRACT} ${VRF_WORD_COUNT} ${CALLBACK_GAS_LIMIT} ${DEPLOYMENT_CONFIRMATIONS}"
+CHAOS_CONTRACT=$(deploy_contract $RPC_URL "$CHAOS_CONTRACT_ARGS" $OWNER_SECRET $CHAOS_FARM_CONTRACT_PATH)
+echo "Chaos Farm contract deployed to: ${CHAOS_CONTRACT}"
 
 # Add the Chaos Farm contract as a consumer address to the VRF contract
 echo "Adding the Chaos Farm contract as a Consumer on the VRF contract."
@@ -101,7 +93,7 @@ send_tx $CHAOS_CONTRACT "setAllowedCaller(address)" $OWNER_ADDRESS
 echo "Requesting VRF..."
 send_tx $CHAOS_CONTRACT "rollDice(address)" $OWNER_ADDRESS
 
-# Output the last roll to verify it's a roll in progress, i.e. [0,0,0,0,0,0]
+# Verify the last roll is in progress, i.e. [0,0,0,0,0,0]
 echo "Roll is in progress: " `cast call $CHAOS_CONTRACT "lastRoll(address)(uint[])" $OWNER_ADDRESS --rpc-url $RPC_URL`
 
 # Simulate the callback returning the random numbers; pass in fixed values
