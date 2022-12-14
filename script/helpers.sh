@@ -55,6 +55,14 @@ send_tx() {
   fi
 }
 
+# Verify script dependencies are installed
+check_dependencies() {
+  if [ $(dpkg-query -W -f='${Status}' jq 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    echo -e "This script requires ${LT_BLUE}jq${NC}, install it and try again."
+    exit 1
+  fi
+}
+
 #
 # Private Functions
 #
