@@ -1,8 +1,6 @@
 # Chaos Farm - Composable Chainlink VRF Client
 
-Chaos Farm implements the Chainlink VRF client and keeps record of VRF call results and the account the call results belong to. The original use case for this contract is inspired by blockchain gaming; the data stored in Chaos farm may be used as a basis for NFT generation with random properties to be used in game systems. With that said, Chaos Farm aims to be a general tool and is not intended to offer any abstractions specific to gaming.
-
-This service is intended to preserve the integrity of the recorded VRF results so the dependent contract may rely upon the data received from Chainlink to be auditable and authentic. The design of Chaos Farm aims to protect the quality of the VRF output data through immutable patterns wherever possible and auditable events where restrictive patterns are less favorable than the features they disable (the ability to change the allowed caller account, for example).
+Chaos Farm implements a client for the [Chainlink VRF V2 service](https://chain.link/vrf) and keeps record of the VRF call results along with the account the call results belong to. This allows instances of Chaos Farm to manage a [Programmatic Subscription](https://docs.chain.link/vrf/v2/subscription/examples/programmatic-subscription) to Chainlink for use by other contracts that need to assign and keep track of VRF results to addresses.
 
 ## How to Use
 
