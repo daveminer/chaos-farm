@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
 import "forge-std/console.sol";
@@ -10,14 +10,14 @@ import "../mocks/MockVRFCoordinatorV2.sol";
 //import "../VRFConsumerV2.sol";
 
 abstract contract TestSetup is Test {
-    Chaos internal chaos;
+    Chaos public chaos;
 
     MockLinkToken public linkToken;
     MockVRFCoordinatorV2 public vrfCoordinator;
     //VRFConsumerV2 public vrfConsumer;
 
     // Fund the Chainlink subscription
-    uint96 constant FUND_AMOUNT = 1 * 10**18;
+    uint96 constant FUND_AMOUNT = 1 * 10 ** 18;
     // Initialized as blank, fine for testing
     uint64 subscriptionId;
     // gasLane
@@ -80,10 +80,9 @@ abstract contract TestSetup is Test {
     }
 
     // create users with 100 ETH balance each
-    function createUsers(uint256 userNum)
-        internal
-        returns (address payable[] memory)
-    {
+    function createUsers(
+        uint256 userNum
+    ) internal returns (address payable[] memory) {
         address payable[] memory testUsers = new address payable[](userNum);
         for (uint256 i = 0; i < userNum; i++) {
             address payable user = this.getNextUserAddress();
