@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "forge-std/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
@@ -148,11 +149,14 @@ contract VRFCoordinatorV2Mock is VRFCoordinatorV2Interface {
         uint96 payment = uint96(
             BASE_FEE + ((startGas - gasleft()) * GAS_PRICE_LINK)
         );
+
         if (s_subscriptions[req.subId].balance < payment) {
             revert InsufficientBalance();
         }
+
         s_subscriptions[req.subId].balance -= payment;
         delete (s_requests[_requestId]);
+
         emit RandomWordsFulfilled(_requestId, _requestId, payment, success);
     }
 

@@ -17,6 +17,13 @@ contract CardExampleTest is TestSetup {
         chaos.setAllowedCaller(address(cardExample));
     }
 
+    function testRequestNewCard() public {
+        createCardWithCallback(alice);
+
+        vm.prank(alice);
+        cardExample.requestNewCard();
+    }
+
     function testLastCard() public {
         createCardWithCallback(alice);
 
@@ -34,6 +41,30 @@ contract CardExampleTest is TestSetup {
         for (uint i = 0; i < details.length; i++) {
             assert(details[i] != 0);
         }
+    }
+
+    function testCardDescription() public {
+        createCardWithCallback(alice);
+
+        string memory description = cardExample.cardDescription(0);
+
+        assertEq(description, "1 of Diamonds");
+    }
+
+    function testSuit() public {
+        createCardWithCallback(alice);
+
+        string memory suit = cardExample.suit(0);
+
+        assertEq(suit, "Diamonds");
+    }
+
+    function testCardValue() public {
+        createCardWithCallback(alice);
+
+        string memory value = cardExample.cardValue(0);
+
+        assertEq(value, "1");
     }
 
     function createCardWithCallback(address requester) private {

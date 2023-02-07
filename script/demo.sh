@@ -1,5 +1,13 @@
 #!/bin/bash
 
+###############
+# Demo Script #
+###############
+
+# Run this script to see an example of the contract in action. This script deploys
+# the mock VRF and Chaos Farm contracts to a running instance of Anvil. Afterwards
+# it will interact with the contract in the terminal via cast.
+
 # Import helpers
 HELPERS_PATH=$(find . -name "helpers.sh")
 source ${HELPERS_PATH}
