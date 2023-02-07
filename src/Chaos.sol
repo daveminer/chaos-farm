@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
@@ -86,11 +86,9 @@ contract Chaos is VRFConsumerBaseV2 {
     }
 
     // Roll on behalf of another address.
-    function rollDice(address _roller)
-        public
-        onlyAllowed
-        returns (uint256 requestId)
-    {
+    function rollDice(
+        address _roller
+    ) public onlyAllowed returns (uint256 requestId) {
         // Rolling account must not have a pending roll.
         require(readyToRoll(_roller), "Roll in progress.");
 
@@ -114,6 +112,8 @@ contract Chaos is VRFConsumerBaseV2 {
 
         s_results[_roller].push(rollInProgress);
         emit RollStarted(requestId, _roller);
+
+        return requestId;
     }
 
     // Checks if an address is ready to roll. An address will generally be considered
@@ -156,10 +156,10 @@ contract Chaos is VRFConsumerBaseV2 {
     }
 
     // Required callback for VRFConsumerBaseV2
-    function fulfillRandomWords(uint requestId, uint[] memory randomWords)
-        internal
-        override
-    {
+    function fulfillRandomWords(
+        uint requestId,
+        uint[] memory randomWords
+    ) internal override {
         address roller = s_requests[requestId];
         uint lastIndex = s_results[roller].length - 1;
         uint[] storage unfinishedRoll = s_results[roller][lastIndex];
@@ -170,6 +170,13 @@ contract Chaos is VRFConsumerBaseV2 {
 
         // Emitting event to signal that dice landed
         emit RollFinished(requestId, randomWords);
+    }
+
+    function rollerResults(
+        address _roller,
+        uint _rollIndex
+    ) public view returns (uint[] memory) {
+        return s_results[_roller][_rollIndex];
     }
 
     fallback() external payable {

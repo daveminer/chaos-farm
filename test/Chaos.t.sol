@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
 import "forge-std/console.sol";
@@ -18,14 +18,19 @@ contract ChaosTest is TestSetup {
     function setUp() public override {
         super.setUp();
 
+        // Set up initial state (mock usage) on the contract.
+
+        // Bob has completes two rolls.
         requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[0], address(chaos));
         requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[1], address(chaos));
 
+        // Carol completes a roll.
         requestIds.push(rollForAddress(address(carol)));
         vrfCoordinator.fulfillRandomWords(requestIds[2], address(chaos));
 
+        // Bob completes his third roll.
         requestIds.push(rollForAddress(address(bob)));
         vrfCoordinator.fulfillRandomWords(requestIds[3], address(chaos));
 
@@ -41,6 +46,7 @@ contract ChaosTest is TestSetup {
 
         vm.prank(address(chaos.owner()));
         vm.expectEmit(true, true, false, false);
+
         emit AllowedAddressChanged(alice, bob);
         chaos.setAllowedCaller(address(bob));
     }
@@ -112,6 +118,10 @@ contract ChaosTest is TestSetup {
             assert(finishedRoll[i] != 0);
         }
     }
+
+    function testFallback() public {}
+
+    function testReceive() public {}
 
     function testIntegration() public {
         // Alice is ready to roll; has no previous rolls.
