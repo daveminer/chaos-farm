@@ -27,9 +27,13 @@ A simple use case is demonstrated on the Polygon Mumbai Testnet.
 #### Prerequisites
 
 Add Polygon Testnet Mumbai: https://mumbai.polygonscan.com/
+
 Set up VRF subscription: https://vrf.chain.link/
+
 Test MATIC; get from faucet here: https://faucet.polygon.technology/
+
 Test LINK; get here: https://faucets.chain.link/mumbai
+
 Send LINK to VRF subscription with the token address here: https://docs.chain.link/resources/link-token-contracts/
 
 #### Environment Preparation
